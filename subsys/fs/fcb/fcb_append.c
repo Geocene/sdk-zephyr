@@ -40,12 +40,16 @@ fcb_append_to_scratch(struct fcb *fcb)
 {
 	int sector_idx;
 	int rc;
+	struct flash_sector sector;
 
 	sector_idx = fcb_new_sector_idx(fcb, 0);
 	if (!sector_idx) {
 		return -ENOSPC;
 	}
-	rc = fcb_sector_hdr_init(fcb, sector_idx, fcb->f_active_id + 1);
+	sector.fs_off = sector_idx * fcb->f_sector_size;
+	sector.fs_size = fcb->f_sector_size;
+
+	rc = fcb_sector_hdr_init(fcb, &sector, fcb->f_active_id + 1);
 	if (rc) {
 		return rc;
 	}

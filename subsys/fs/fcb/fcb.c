@@ -190,12 +190,13 @@ int
 fcb_free_sector_cnt(struct fcb *fcb)
 {
 	int i;
-	int sector_idx;
+	int sector_idx, oldest_idx;
 
-	sector_idx = fcb_get_sector_idx(fcb, fcb->f_active.fe_sector.fs_off);
+	sector_idx = fcb_get_sector_idx(fcb, &fcb->f_active.fe_sector);
+	oldest_idx = fcb_get_sector_idx(fcb, &fcb->f_oldest);
 	for (i = 0; i < fcb->f_sector_cnt; i++) {
-		sector_idx = fcb_getnext_sector_idx(fcb, i);
-		if (sector_idx == fcb_get_sector_idx(fcb, &fcb->f_oldest)) {
+		sector_idx = fcb_getnext_sector_idx(fcb, sector_idx);
+		if (sector_idx == oldest_idx) {
 			break;
 		}
 	}
