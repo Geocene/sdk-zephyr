@@ -62,9 +62,12 @@ static inline int fcb_len_in_flash(struct fcb *fcb, uint16_t len)
 
 const struct flash_area *fcb_open_flash(const struct fcb *fcb);
 uint8_t fcb_get_align(const struct fcb *fcb);
+uint16_t fcb_get_sector_idx(struct fcb *fcb, struct flash_sector *sector);
 int fcb_erase_sector(const struct fcb *fcb, const struct flash_sector *sector);
 
 int fcb_getnext_in_sector(struct fcb *fcb, struct fcb_entry *loc);
+int fcb_getnext_sector_idx(struct fcb *fcb, int sector_idx);
+off_t fcb_getnext_sector_offset(struct fcb *fcb, struct flash_sector *sector);
 struct flash_sector *fcb_getnext_sector(struct fcb *fcb,
 					struct flash_sector *sector);
 int fcb_getnext_nolock(struct fcb *fcb, struct fcb_entry *loc);

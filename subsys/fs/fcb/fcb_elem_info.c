@@ -28,11 +28,11 @@ fcb_elem_crc8(struct fcb *_fcb, struct fcb_entry *loc, uint8_t *c8p)
 	uint32_t end;
 	int rc;
 
-	if (loc->fe_elem_off + 2 > loc->fe_sector->fs_size) {
+	if (loc->fe_elem_off + 2 > loc->fe_sector.fs_size) {
 		return -ENOTSUP;
 	}
 
-	rc = fcb_flash_read(_fcb, loc->fe_sector, loc->fe_elem_off, tmp_str, 2);
+	rc = fcb_flash_read(_fcb, &loc->fe_sector, loc->fe_elem_off, tmp_str, 2);
 	if (rc) {
 		return -EIO;
 	}
@@ -55,7 +55,7 @@ fcb_elem_crc8(struct fcb *_fcb, struct fcb_entry *loc, uint8_t *c8p)
 			blk_sz = sizeof(tmp_str);
 		}
 
-		rc = fcb_flash_read(_fcb, loc->fe_sector, off, tmp_str, blk_sz);
+		rc = fcb_flash_read(_fcb, &loc->fe_sector, off, tmp_str, blk_sz);
 		if (rc) {
 			return -EIO;
 		}
@@ -130,7 +130,7 @@ int fcb_elem_info(struct fcb *_fcb, struct fcb_entry *loc)
 	}
 	off = loc->fe_data_off + fcb_len_in_flash(_fcb, loc->fe_data_len);
 
-	rc = fcb_flash_read(_fcb, loc->fe_sector, off, &fl_em, sizeof(fl_em));
+	rc = fcb_flash_read(_fcb, &loc->fe_sector, off, &fl_em, sizeof(fl_em));
 	if (rc) {
 		return -EIO;
 	}

@@ -47,7 +47,7 @@ extern "C" {
  * within that area.
  */
 struct fcb_entry {
-	struct flash_sector *fe_sector;
+	struct flash_sector fe_sector;
 	/**< Pointer to info about sector where data are placed */
 
 	uint32_t fe_elem_off;
@@ -101,22 +101,20 @@ struct fcb {
 	 */
 
 	uint8_t f_version; /**<  Current version number of the data */
-	uint16_t f_sector_start;
+	uint16_t f_sector_start; /**< First sector of FCB */
 	uint16_t f_sector_cnt; /**< Number of elements in sector array */
-	uint16_t f_sector_size;
+	uint16_t f_sector_end; /**< Last sector of FCB */
+	uint16_t f_sector_size; /**< Sector size */
 	uint16_t f_scratch_cnt;
 	/**< Number of sectors to keep empty. This can be used if you need
 	 * to have scratch space for garbage collecting when FCB fills up.
 	 */
 
-	struct flash_sector *f_sectors;
-	/**< Array of sectors, must be contiguous */
-
 	/* Flash circular buffer internal state */
 	struct k_mutex f_mtx;
 	/**< Locking for accessing the FCB data, internal state */
 
-	struct flash_sector *f_oldest;
+	struct flash_sector f_oldest;
 	/**< Pointer to flash sector containing the oldest data,
 	 * internal state
 	 */

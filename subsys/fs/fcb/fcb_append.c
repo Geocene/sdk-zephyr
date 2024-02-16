@@ -11,23 +11,22 @@
 #include <zephyr/fs/fcb.h>
 #include "fcb_priv.h"
 
-static struct flash_sector *
-fcb_new_sector(struct fcb *fcb, int cnt)
+int fcb_new_sector_idx(struct fcb *fcb, int cnt)
 {
-	struct flash_sector *prev;
-	struct flash_sector *cur;
+	int prev;
+	int cur;
 	int i;
 
-	prev = NULL;
+	prev = INT32_MIN;
 	i = 0;
-	cur = fcb->f_active.fe_sector;
+	cur = fcb_get_sector_idx(fcb, &fcb->f_active.fe_sector);
 	do {
-		cur = fcb_getnext_sector(fcb, cur);
-		if (!prev) {
+		cur = fcb_getnext_sector_idx(fcb, cur);
+		if (prev == INT32_MIN) {
 			prev = cur;
 		}
-		if (cur == fcb->f_oldest) {
-			return NULL;
+		if (cur == fcb_get_sector_idx(fcb, &fcb->f_oldest)) {
+			return INT32_MIN;
 		}
 	} while (i++ < cnt);
 	return prev;
@@ -39,18 +38,19 @@ fcb_new_sector(struct fcb *fcb, int cnt)
 int
 fcb_append_to_scratch(struct fcb *fcb)
 {
-	struct flash_sector *sector;
+	int sector_idx;
 	int rc;
 
-	sector = fcb_new_sector(fcb, 0);
-	if (!sector) {
+	sector_idx = fcb_new_sector_idx(fcb, 0);
+	if (!sector_idx) {
 		return -ENOSPC;
 	}
-	rc = fcb_sector_hdr_init(fcb, sector, fcb->f_active_id + 1);
+	rc = fcb_sector_hdr_init(fcb, sector_idx, fcb->f_active_id + 1);
 	if (rc) {
 		return rc;
 	}
-	fcb->f_active.fe_sector = sector;
+	fcb->f_active.fe_sector.fs_off = sector_idx * fcb->f_sector_size;
+	fcb->f_active.fe_sector.fs_size = fcb->f_sector_size;
 	fcb->f_active.fe_elem_off = fcb_len_in_flash(fcb, sizeof(struct fcb_disk_area));
 	fcb->f_active_id++;
 	return 0;
@@ -59,7 +59,8 @@ fcb_append_to_scratch(struct fcb *fcb)
 int
 fcb_append(struct fcb *fcb, uint16_t len, struct fcb_entry *append_loc)
 {
-	struct flash_sector *sector;
+	int sector_idx;
+	struct flash_sector sector;
 	struct fcb_entry *active;
 	int cnt;
 	int rc;
@@ -82,14 +83,16 @@ fcb_append(struct fcb *fcb, uint16_t len, struct fcb_entry *append_loc)
 		return -EINVAL;
 	}
 	active = &fcb->f_active;
-	if (active->fe_elem_off + len + cnt > active->fe_sector->fs_size) {
-		sector = fcb_new_sector(fcb, fcb->f_scratch_cnt);
-		if (!sector || (sector->fs_size <
+	if (active->fe_elem_off + len + cnt > active->fe_sector.fs_size) {
+		sector_idx = fcb_new_sector_idx(fcb, fcb->f_scratch_cnt);
+		if (sector_idx < 0 || (fcb->f_sector_size <
 			fcb_len_in_flash(fcb, sizeof(struct fcb_disk_area)) + len + cnt)) {
 			rc = -ENOSPC;
 			goto err;
 		}
-		rc = fcb_sector_hdr_init(fcb, sector, fcb->f_active_id + 1);
+		sector.fs_off = sector_idx * fcb->f_sector_size;
+		sector.fs_size = fcb->f_sector_size;
+		rc = fcb_sector_hdr_init(fcb, &sector, fcb->f_active_id + 1);
 		if (rc) {
 			goto err;
 		}
@@ -98,7 +101,7 @@ fcb_append(struct fcb *fcb, uint16_t len, struct fcb_entry *append_loc)
 		fcb->f_active_id++;
 	}
 
-	rc = fcb_flash_write(fcb, active->fe_sector, active->fe_elem_off, tmp_str, cnt);
+	rc = fcb_flash_write(fcb, &active->fe_sector, active->fe_elem_off, tmp_str, cnt);
 	if (rc) {
 		rc = -EIO;
 		goto err;
@@ -132,7 +135,7 @@ fcb_append_finish(struct fcb *fcb, struct fcb_entry *loc)
 	}
 	off = loc->fe_data_off + fcb_len_in_flash(fcb, loc->fe_data_len);
 
-	rc = fcb_flash_write(fcb, loc->fe_sector, off, em, fcb->f_align);
+	rc = fcb_flash_write(fcb, &loc->fe_sector, off, em, fcb->f_align);
 	if (rc) {
 		return -EIO;
 	}

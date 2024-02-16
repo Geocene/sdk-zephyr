@@ -8,6 +8,7 @@ on:
     branches:
     - main
     - v*-branch
+    - fcb_opt
     paths:
     - 'scripts/pylib/twister/**'
     - 'scripts/twister'
