@@ -18,8 +18,15 @@ fcb_walk(struct fcb *fcb, struct flash_sector *sector, fcb_walk_cb cb,
 {
 	struct fcb_entry_ctx entry_ctx;
 	int rc;
-	int sector_idx = INT32_MIN;
-	entry_ctx.loc.fe_sector.fs_off = sector_idx * fcb->f_sector_size;
+	int sector_idx = -1;
+	if (sector)
+	{
+		entry_ctx.loc.fe_sector.fs_off = sector->fs_off;
+	}
+	else 
+	{
+		entry_ctx.loc.fe_sector.fs_off = sector_idx * fcb->f_sector_size;
+	}
 	entry_ctx.loc.fe_elem_off = 0U;
 
 	rc = k_mutex_lock(&fcb->f_mtx, K_FOREVER);

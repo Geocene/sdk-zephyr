@@ -15,6 +15,10 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
 
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(FCB_INT, LOG_LEVEL_INF);
+
 uint16_t fcb_get_sector_idx(struct fcb *fcb, struct flash_sector *sector)
 {
 	return sector->fs_off / fcb->f_sector_size;
@@ -104,12 +108,12 @@ fcb_init(int f_area_id, struct fcb *fcb)
 	int i;
 	uint8_t align;
 	int oldest = -1, newest = -1;
-	struct flash_sector *oldest_sector = NULL, *newest_sector = NULL;
+	struct flash_sector oldest_sector, newest_sector;
 	struct fcb_disk_area fda;
 	const struct flash_parameters *fparam;
 
 	// If an array of sectors is not provided, a start/end/count alignment can be provided instead
-	if ((fcb->f_sector_end - fcb->f_sector_start != fcb->f_sector_cnt) || 
+	if ((fcb->f_sector_end - fcb->f_sector_start != (fcb->f_sector_cnt - 1)) || 
 		(fcb->f_sector_cnt - fcb->f_scratch_cnt < 1)) {
 		return -EINVAL;
 	}
@@ -137,38 +141,42 @@ fcb_init(int f_area_id, struct fcb *fcb)
 			return rc;
 		}
 		if (rc == 0) {
+			LOG_INF("Sector %u unused, moving on", sector.fs_off / sector.fs_size);
 			continue;
 		}
+		LOG_INF("Sector %u has data", sector.fs_off / sector.fs_size);
 		if (oldest < 0) {
 			oldest = newest = fda.fd_id;
-			oldest_sector = newest_sector = &sector;
+			oldest_sector = newest_sector = sector;
 			continue;
 		}
 		if (FCB_ID_GT(fda.fd_id, newest)) {
 			newest = fda.fd_id;
-			newest_sector = &sector;
+			newest_sector = sector;
 		} else if (FCB_ID_GT(oldest, fda.fd_id)) {
 			oldest = fda.fd_id;
-			oldest_sector = &sector;
+			oldest_sector = sector;
 		}
 	}
 	if (oldest < 0) {
 		/*
 		 * No initialized areas.
 		 */
+		LOG_INF("No initialized areas");
 		sector.fs_off = fcb->f_sector_start;
 		sector.fs_size = fcb->f_sector_size;
-		oldest_sector = newest_sector = &sector;
+		oldest_sector = newest_sector = sector;
 
-		rc = fcb_sector_hdr_init(fcb, oldest_sector, 0);
+		rc = fcb_sector_hdr_init(fcb, &oldest_sector, 0);
 		if (rc) {
 			return rc;
 		}
 		newest = oldest = 0;
 	}
+	LOG_INF("Setting oldest sector: %u", oldest_sector.fs_off / oldest_sector.fs_size);
 	fcb->f_align = align;
-	fcb->f_oldest = *oldest_sector;
-	fcb->f_active.fe_sector = *newest_sector;
+	fcb->f_oldest = oldest_sector;
+	fcb->f_active.fe_sector = newest_sector;
 	fcb->f_active.fe_elem_off = fcb_len_in_flash(fcb, sizeof(struct fcb_disk_area));
 	fcb->f_active_id = newest;
 
@@ -181,6 +189,7 @@ fcb_init(int f_area_id, struct fcb *fcb)
 		if (rc != 0) {
 			break;
 		}
+		LOG_DBG("Found element sector %u, offset %u", fcb->f_active.fe_sector.fs_off / fcb->f_active.fe_sector.fs_size, fcb->f_active.fe_data_off);
 	}
 	k_mutex_init(&fcb->f_mtx);
 	return rc;

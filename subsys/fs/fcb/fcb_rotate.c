@@ -8,6 +8,10 @@
 #include <zephyr/fs/fcb.h>
 #include "fcb_priv.h"
 
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(FCB_ROT, LOG_LEVEL_INF);
+
 int
 fcb_rotate(struct fcb *fcb)
 {
@@ -24,6 +28,7 @@ fcb_rotate(struct fcb *fcb)
 		rc = -EIO;
 		goto out;
 	}
+	LOG_INF("erased sector %u", fcb->f_oldest.fs_off / fcb->f_oldest.fs_size);
 	if (fcb_get_sector_idx(fcb, &fcb->f_oldest) == fcb_get_sector_idx(fcb, &fcb->f_active.fe_sector)) {
 		/*
 		 * Need to create a new active area, as we're wiping
