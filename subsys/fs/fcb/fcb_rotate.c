@@ -28,7 +28,7 @@ fcb_rotate(struct fcb *fcb)
 		rc = -EIO;
 		goto out;
 	}
-	LOG_INF("erased sector %u", fcb->f_oldest.fs_off / fcb->f_oldest.fs_size);
+	LOG_INF("erased sector %lu", fcb->f_oldest.fs_off / fcb->f_oldest.fs_size);
 	if (fcb_get_sector_idx(fcb, &fcb->f_oldest) == fcb_get_sector_idx(fcb, &fcb->f_active.fe_sector)) {
 		/*
 		 * Need to create a new active area, as we're wiping

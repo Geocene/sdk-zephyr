@@ -141,10 +141,10 @@ fcb_init(int f_area_id, struct fcb *fcb)
 			return rc;
 		}
 		if (rc == 0) {
-			LOG_INF("Sector %u unused, moving on", sector.fs_off / sector.fs_size);
+			LOG_INF("Sector %lu unused, moving on", sector.fs_off / sector.fs_size);
 			continue;
 		}
-		LOG_INF("Sector %u has data", sector.fs_off / sector.fs_size);
+		LOG_INF("Sector %lu has data", sector.fs_off / sector.fs_size);
 		if (oldest < 0) {
 			oldest = newest = fda.fd_id;
 			oldest_sector = newest_sector = sector;
@@ -173,7 +173,7 @@ fcb_init(int f_area_id, struct fcb *fcb)
 		}
 		newest = oldest = 0;
 	}
-	LOG_INF("Setting oldest sector: %u", oldest_sector.fs_off / oldest_sector.fs_size);
+	LOG_INF("Setting oldest sector: %lu", oldest_sector.fs_off / oldest_sector.fs_size);
 	fcb->f_align = align;
 	fcb->f_oldest = oldest_sector;
 	fcb->f_active.fe_sector = newest_sector;
@@ -189,7 +189,7 @@ fcb_init(int f_area_id, struct fcb *fcb)
 		if (rc != 0) {
 			break;
 		}
-		LOG_DBG("Found element sector %u, offset %u", fcb->f_active.fe_sector.fs_off / fcb->f_active.fe_sector.fs_size, fcb->f_active.fe_data_off);
+		LOG_DBG("Found element sector %lu, offset %u", fcb->f_active.fe_sector.fs_off / fcb->f_active.fe_sector.fs_size, fcb->f_active.fe_data_off);
 	}
 	k_mutex_init(&fcb->f_mtx);
 	return rc;
