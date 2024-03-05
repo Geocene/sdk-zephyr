@@ -126,8 +126,8 @@ fcb_init(int f_area_id, struct fcb *fcb)
 	fparam = flash_get_parameters(fcb->fap->fa_dev);
 	fcb->f_erase_value = fparam->erase_value;
 
-	align = fcb_get_align(fcb);
-	if (align == 0U) {
+	// align = fcb_get_align(fcb);
+	if (fcb->f_align == 0U) {
 		return -EINVAL;
 	}
 
