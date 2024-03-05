@@ -127,6 +127,7 @@ fcb_init(int f_area_id, struct fcb *fcb)
 	fcb->f_erase_value = fparam->erase_value;
 
 	// align = fcb_get_align(fcb);
+	align = fcb->f_align;
 	if (fcb->f_align == 0U) {
 		return -EINVAL;
 	}
