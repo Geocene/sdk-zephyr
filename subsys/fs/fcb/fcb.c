@@ -17,7 +17,7 @@
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(FCB_INT, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(FCB_INT, LOG_LEVEL_WRN);
 
 uint16_t fcb_get_sector_idx(struct fcb *fcb, struct flash_sector *sector)
 {
