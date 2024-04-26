@@ -8,10 +8,14 @@
 #include <zephyr/fs/fcb.h>
 #include "fcb_priv.h"
 
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(FCB_ROT, LOG_LEVEL_INF);
+
 int
 fcb_rotate(struct fcb *fcb)
 {
-	struct flash_sector *sector;
+	struct flash_sector sector;
 	int rc = 0;
 
 	rc = k_mutex_lock(&fcb->f_mtx, K_FOREVER);
@@ -19,18 +23,20 @@ fcb_rotate(struct fcb *fcb)
 		return -EINVAL;
 	}
 
-	rc = fcb_erase_sector(fcb, fcb->f_oldest);
+	rc = fcb_erase_sector(fcb, &fcb->f_oldest);
 	if (rc) {
 		rc = -EIO;
 		goto out;
 	}
-	if (fcb->f_oldest == fcb->f_active.fe_sector) {
+	LOG_INF("erased sector %lu", fcb->f_oldest.fs_off / fcb->f_oldest.fs_size);
+	if (fcb_get_sector_idx(fcb, &fcb->f_oldest) == fcb_get_sector_idx(fcb, &fcb->f_active.fe_sector)) {
 		/*
 		 * Need to create a new active area, as we're wiping
 		 * the current.
 		 */
-		sector = fcb_getnext_sector(fcb, fcb->f_oldest);
-		rc = fcb_sector_hdr_init(fcb, sector, fcb->f_active_id + 1);
+		sector.fs_off = fcb_getnext_sector_offset(fcb, &fcb->f_oldest);
+		sector.fs_size = fcb->f_sector_size;
+		rc = fcb_sector_hdr_init(fcb, &sector, fcb->f_active_id + 1);
 		if (rc) {
 			goto out;
 		}
@@ -38,7 +44,9 @@ fcb_rotate(struct fcb *fcb)
 		fcb->f_active.fe_elem_off = fcb_len_in_flash(fcb, sizeof(struct fcb_disk_area));
 		fcb->f_active_id++;
 	}
-	fcb->f_oldest = fcb_getnext_sector(fcb, fcb->f_oldest);
+
+	fcb->f_oldest.fs_off = fcb_getnext_sector_offset(fcb, &fcb->f_oldest);
+	fcb->f_oldest.fs_size = fcb->f_sector_size;
 out:
 	k_mutex_unlock(&fcb->f_mtx);
 	return rc;
